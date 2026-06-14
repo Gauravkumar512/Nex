@@ -2,6 +2,8 @@ import express from 'express'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import passport from './config/passport'
+import authRouter from './routes/auth.routes'
 
 dotenv.config();
 
@@ -15,6 +17,9 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({extended: true, limit: '50mb'}));
 
+app.use(passport.initialize());
+
+app.use('/auth', authRouter);
 
 app.get('/health', (req, res) => {
 
@@ -22,5 +27,6 @@ app.get('/health', (req, res) => {
         message: "Server is healthy",
     });
 });
+
 
 export default app;

@@ -7,8 +7,8 @@ services:
       - '5440:5432'
     environment:
       POSTGRES_DB: nexus
-      POSTGRES_USER: Gaurav_nexus
-      POSTGRES_PASSWORD: Ecxu8hmd
+      POSTGRES_USER: nexus_admin
+      POSTGRES_PASSWORD: nexus_password
     volumes:
       - pg_data:/var/lib/postgresql/data
 

@@ -32,3 +32,5 @@ coverage/
 Thumbs.db
 .idea/
 *.swp
+
+/src/generated/prisma

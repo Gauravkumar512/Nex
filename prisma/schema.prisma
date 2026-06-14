@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String     @id        @default(uuid())
+  email         String     @unique
+  name          String     
+  googleId      String     @unique
+  avatarUrl     String?
+
+
+  encryptedRefreshToken   String?
+  accessToken             String?
+  accessTokenExpiry       DateTime?
+
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+
+  profile            Profile?
+  jobs               Job[]    
+}
+
+model Profile{
+  id        String     @id       @default(uuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId],references: [id], onDelete: Cascade)
+
+  resume     String?
+  skills     Json? // language,framework,tool
+  projects   Json? // name,description,githuburl
+
+  githubUrl  String?
+  summary    String?
+
+  updatedAt  DateTime   @updatedAt
+}
+
+
+model Company{
+  id              String    @id            @default(uuid())     
+  name            String                          
+  website         String?                  
+  description     String?
+
+  createdAt       DateTime  @default(now())
+
+  jobs  Job[]
+  @@unique([name,website])
+}
+
+enum JobSource {
+  WELLFOUND
+  LINKEDIN
+  INDEED
+  REFERRAL
+  COLD
+  OTHER
+}
+
+enum JobStatus {
+  SAVED
+  APPLIED
+  REPLIED
+  INTERVIEWING
+  REJECTED
+  OFFER
+}
+
+model Job {  
+  id            String      @id         @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId],references: [id],onDelete: Cascade)
+  companyId     String
+  company       Company     @relation(fields: [companyId],references: [id])
+
+  role                String
+  jobDescription      String      @db.Text
+
+  hrEmail             String?
+  hrName              String?
+  source              JobSource     @default(OTHER)
+
+  matchScore      Int?     // 0-100, set by AI
+  matchBreakdown  Json?    // { matched: [...], missing: [...] }
+  status          JobStatus         @default(SAVED)
+
+  appliedAt       DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  statusHistory    JobStatusHistory[]
+
+  @@unique([userId, companyId, role])
+}
+
+model JobStatusHistory {
+  id        String    @id @default(uuid())
+  jobId     String
+  job       Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  status    JobStatus
+
+  changedAt DateTime @default(now())
+}
