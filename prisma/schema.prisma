@@ -33,7 +33,6 @@ model Profile{
   resume     String?
   skills     Json? // language,framework,tool
   projects   Json? // name,description,githuburl
-
   githubUrl  String?
   summary    String?
 
