@@ -1,7 +1,7 @@
+import { Profile } from 'passport-google-oauth20';
 import jwt from 'jsonwebtoken';
 import client from '../config/db';
 import { encrypt } from '../utils/encryption';
-import { Profile } from 'passport-google-oauth20';
 
 interface GoogleAuthResult {
   profile: Profile;
@@ -21,6 +21,7 @@ export async function googleAuth(data: GoogleAuthResult) {
     throw new Error('No email returned from Google profile');
   }
 
+  // accessToken kept for future Gmail API automation (inbox watching, reply detection).
   const user = await client.user.upsert({
     where: { googleId },
     update: {
@@ -37,6 +38,7 @@ export async function googleAuth(data: GoogleAuthResult) {
       accessTokenExpiry: new Date(Date.now() + 3600 * 1000),
       encryptedRefreshToken: refreshToken ? encrypt(refreshToken) : null,
     },
+    select: { id: true },
   });
 
   return user;

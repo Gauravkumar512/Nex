@@ -1,28 +1,29 @@
 import { JobStatus } from '@prisma/client';
 import client from '../config/db';
 import { CreateJobInput } from '../schemas/job.schema';
+import { AppError } from '../utils/AppError';
 import { scoreJobMatch } from './match.service';
 
 export async function createJob(userId: string, input: CreateJobInput) {
-  const company = await client.company.upsert({
-    where: {
-      name_website: {
+  const [company, profile] = await Promise.all([
+    client.company.upsert({
+      where: {
+        name_website: {
+          name: input.companyName,
+          website: input.companyWebsite ?? '',
+        },
+      },
+      update: {},
+      create: {
         name: input.companyName,
         website: input.companyWebsite ?? '',
       },
-    },
-    update: {},
-    create: {
-      name: input.companyName,
-      website: input.companyWebsite ?? '',
-    },
-  });
+    }),
+    client.profile.findUnique({ where: { userId } }),
+  ]);
 
-  const profile = await client.profile.findUnique({
-    where: { userId },
-  });
   if (!profile) {
-    throw new Error('Profile not found. Upload a resume before adding jobs.');
+    throw new AppError(400, 'Profile not found. Upload a resume before adding jobs.');
   }
 
   const job = await client.job.create({
@@ -34,7 +35,6 @@ export async function createJob(userId: string, input: CreateJobInput) {
       hrEmail: input.hrEmail ?? null,
       hrName: input.hrName ?? null,
       source: input.source,
-
       statusHistory: {
         create: { status: 'SAVED' },
       },
@@ -73,12 +73,10 @@ export async function getJobs(userId: string) {
 }
 
 export async function updateJobStatus(userId: string, jobId: string, newStatus: JobStatus) {
-  const job = await client.job.findUnique({
-    where: { id: jobId },
-  });
+  const job = await client.job.findUnique({ where: { id: jobId } });
 
   if (!job || job.userId !== userId) {
-    throw new Error('Job not found');
+    throw new AppError(404, 'Job not found');
   }
 
   const [updatedJob] = await client.$transaction([
@@ -91,10 +89,7 @@ export async function updateJobStatus(userId: string, jobId: string, newStatus: 
       include: { company: true },
     }),
     client.jobStatusHistory.create({
-      data: {
-        jobId,
-        status: newStatus,
-      },
+      data: { jobId, status: newStatus },
     }),
   ]);
 

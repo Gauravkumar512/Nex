@@ -10,7 +10,7 @@ export interface EmailDraft {
 
 export const emailQueue = new Queue<EmailDraft>('email-draft', {
   connection: {
-    host: process.env.REDIS_HOST,
+    host: process.env.REDIS_HOST!,
     port: parseInt(process.env.REDIS_PORT!),
   },
   defaultJobOptions: {

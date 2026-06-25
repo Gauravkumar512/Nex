@@ -6,14 +6,15 @@ import {
   handleGetJob,
   handleJobStatus,
 } from '../controller/job.controller';
-import { verifyaccessToken } from '../middleware/auth.middleware';
+import { verifyAccessToken } from '../middleware/auth.middleware';
+import { aiLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
-router.post('/', verifyaccessToken, handleCreateJob);
-router.get('/', verifyaccessToken, handleGetJob);
-router.patch('/:id/status', verifyaccessToken, handleJobStatus);
-router.post('/:id/draft-email', verifyaccessToken, handleEmail);
-router.get('/:id/email-stream', verifyaccessToken, handleEmailStream);
+router.post('/', verifyAccessToken, aiLimiter, handleCreateJob);
+router.get('/', verifyAccessToken, handleGetJob);
+router.patch('/:id/status', verifyAccessToken, handleJobStatus);
+router.post('/:id/draft-email', verifyAccessToken, aiLimiter, handleEmail);
+router.get('/:id/email-stream', verifyAccessToken, handleEmailStream);
 
 export default router;

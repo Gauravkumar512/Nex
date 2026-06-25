@@ -25,27 +25,26 @@ const templates = [
   },
 ];
 
-const selectedTemplate = templates[Math.floor(Math.random() * templates.length)];
+const connection = {
+  host: process.env.REDIS_HOST!,
+  port: parseInt(process.env.REDIS_PORT!),
+};
 
 export const worker = new Worker<EmailDraft>(
   'email-draft',
   async (job: Job<EmailDraft>) => {
-    console.log('Worker received job data:', job.data);
+    // Select tone fresh per job so each draft can vary.
+    const selectedTemplate = templates[Math.floor(Math.random() * templates.length)]!;
+
     const { jobId, userId } = job.data;
-    console.log('jobId:', jobId, 'userId:', userId);
 
     const [jobRecord, profile] = await Promise.all([
       client.job.findUnique({
         where: { id: jobId },
         include: { company: true },
       }),
-      client.profile.findUnique({
-        where: { userId },
-      }),
-    ]).catch((err) => {
-      console.error('FULL PRISMA ERROR:', JSON.stringify(err, null, 2));
-      throw err;
-    });
+      client.profile.findUnique({ where: { userId } }),
+    ]);
 
     if (!jobRecord || !profile) {
       throw new Error('Job or Profile not found');
@@ -61,8 +60,8 @@ export const worker = new Worker<EmailDraft>(
 
 The email must feel like it was written by a real person — casual, direct, human. Not a cover letter. Not a template. One person reaching out to another.
 
-Today's tone: ${selectedTemplate!.tone}
-Structure instruction: ${selectedTemplate!.instruction}
+Today's tone: ${selectedTemplate.tone}
+Structure instruction: ${selectedTemplate.instruction}
 
 STRICT RULES:
 - 60 to 90 words maximum in the body, excluding signature
@@ -109,24 +108,15 @@ Role: ${jobRecord.role}`,
 
     const { subject, body } = JSON.parse(cleaned);
 
-    console.log('Email drafted (not persisted):', { jobId, subject, body });
-
     sendSSEEvent(jobId, {
       status: 'completed',
-      template: selectedTemplate!.tone,
+      template: selectedTemplate.tone,
       email: { subject, body },
     });
 
     closeSSEClient(jobId);
-
-    console.log(`Email drafted for job: ${jobId} using ${selectedTemplate!.tone} template`);
   },
-  {
-    connection: {
-      host: process.env.REDIS_HOST,
-      port: parseInt(process.env.REDIS_PORT!),
-    },
-  }
+  { connection }
 );
 
 worker.on('failed', (job, err) => {

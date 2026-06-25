@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { Profile } from 'passport-google-oauth20';
 import client from '../config/db';
 import passport from '../config/passport';
-import { AuthenticatedRequest, verifyaccessToken, verifyRefreshToken } from '../middleware/auth.middleware';
+import { AuthenticatedRequest, verifyAccessToken, verifyRefreshToken } from '../middleware/auth.middleware';
+import { authLimiter } from '../middleware/rateLimiter';
 import { generateTokens, googleAuth } from '../services/auth.service';
 
 const router = Router();
@@ -15,6 +16,7 @@ interface GoogleAuthPayload {
 
 router.get(
   '/google',
+  authLimiter,
   passport.authenticate('google', {
     session: false,
     scope: ['profile', 'email', 'https://www.googleapis.com/auth/gmail.readonly'],
@@ -63,7 +65,7 @@ router.get('/failure', (req, res) => {
   res.status(401).json({ message: 'Google authentication failed' });
 });
 
-router.post('/refresh', (req, res) => {
+router.post('/refresh', authLimiter, (req, res) => {
   const refreshToken = req.cookies?.refreshToken;
 
   if (!refreshToken) {
@@ -73,7 +75,6 @@ router.post('/refresh', (req, res) => {
 
   try {
     const decoded = verifyRefreshToken(refreshToken);
-
     const tokens = generateTokens(decoded.userId);
 
     res.cookie('accessToken', tokens.accessToken, {
@@ -96,7 +97,7 @@ router.post('/refresh', (req, res) => {
   }
 });
 
-router.get('/me', verifyaccessToken, async (req: AuthenticatedRequest, res, next) => {
+router.get('/me', verifyAccessToken, async (req: AuthenticatedRequest, res, next) => {
   try {
     const user = await client.user.findUnique({
       where: { id: req.userId as string },
@@ -112,7 +113,6 @@ router.get('/me', verifyaccessToken, async (req: AuthenticatedRequest, res, next
       res.status(404).json({ message: 'User not found' });
       return;
     }
-
     res.status(200).json(user);
   } catch (error) {
     next(error);

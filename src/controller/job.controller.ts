@@ -1,6 +1,6 @@
 import { JobStatus } from '@prisma/client';
 import { NextFunction, Response } from 'express';
-import { string, z } from 'zod';
+import { z } from 'zod';
 import client from '../config/db';
 import { emailQueue } from '../config/emailQueue';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
@@ -43,7 +43,7 @@ export async function handleJobStatus(req: AuthenticatedRequest, res: Response, 
   const validation = updateStatusSchema.safeParse(req.body);
 
   if (!validation.success) {
-    res.status(400).json({ messgae: 'Invalid status value' });
+    res.status(400).json({ message: 'Invalid status value', errors: validation.error.issues });
     return;
   }
 
@@ -59,9 +59,7 @@ export async function handleEmail(req: AuthenticatedRequest, res: Response, next
   const id = req.params.id as string;
 
   try {
-    const job = await client.job.findUnique({
-      where: { id },
-    });
+    const job = await client.job.findUnique({ where: { id } });
 
     if (!job || job.userId !== req.userId) {
       res.status(404).json({ message: 'Job not found' });
@@ -79,20 +77,30 @@ export async function handleEmail(req: AuthenticatedRequest, res: Response, next
   }
 }
 
-export async function handleEmailStream(req: AuthenticatedRequest, res: Response): Promise<void> {
-  const { id } = req.params;
+export async function handleEmailStream(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  const id = req.params.id as string;
 
-  // Set SSE headers
+  try {
+    const job = await client.job.findUnique({ where: { id } });
+    if (!job || job.userId !== req.userId) {
+      res.status(404).json({ message: 'Job not found' });
+      return;
+    }
+  } catch (err) {
+    next(err);
+    return;
+  }
+
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  // Register this connection — worker will find it by jobId
   registerSSEClient(id as string, res);
 
-  // Clean up if client disconnects before worker finishes
-  req.on('close', () => {
-    closeSSEClient(id as string);
-  });
+  req.on('close', () => closeSSEClient(id as string));
 }
