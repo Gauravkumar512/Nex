@@ -22,7 +22,7 @@ model User {
   updatedAt               DateTime    @updatedAt
 
   profile            Profile?
-  jobs               Job[]    
+  jobs               Job[]
 }
 
 model Profile{
@@ -78,6 +78,7 @@ model Job {
 
   role                String
   jobDescription      String      @db.Text
+  // emailDraft String? 
 
   hrEmail             String?
   hrName              String?
@@ -105,3 +106,4 @@ model JobStatusHistory {
 
   changedAt DateTime @default(now())
 }
+

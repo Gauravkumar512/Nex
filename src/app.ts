@@ -4,8 +4,9 @@ import dotenv from 'dotenv';
 import express from 'express';
 import passport from './config/passport';
 import authRouter from './routes/auth.routes';
-import profileRouter from './routes/profile.routes';
 import jobRouter from './routes/job.routes';
+import profileRouter from './routes/profile.routes';
+import './workers/email.worker'
 
 dotenv.config();
 
@@ -25,7 +26,7 @@ app.use(passport.initialize());
 
 app.use('/auth', authRouter);
 app.use('/profile', profileRouter);
-app.use('/jobs',jobRouter)
+app.use('/jobs', jobRouter);
 
 app.get('/health', (req, res) => {
   res.status(200).json({
