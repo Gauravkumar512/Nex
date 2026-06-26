@@ -1,7 +1,4 @@
 import { Queue } from 'bullmq';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 export interface EmailDraft {
   jobId: string;

@@ -27,6 +27,7 @@ export async function googleAuth(data: GoogleAuthResult) {
     update: {
       accessToken,
       accessTokenExpiry: new Date(Date.now() + 3600 * 1000),
+      ...(avatarUrl && { avatarUrl }),
       ...(refreshToken && { encryptedRefreshToken: encrypt(refreshToken) }),
     },
     create: {

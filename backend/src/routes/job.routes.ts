@@ -4,6 +4,7 @@ import {
   handleEmail,
   handleEmailStream,
   handleGetJob,
+  handleGetSingleJob,
   handleJobStatus,
 } from '../controller/job.controller';
 import { verifyAccessToken } from '../middleware/auth.middleware';
@@ -13,6 +14,7 @@ const router = Router();
 
 router.post('/', verifyAccessToken, aiLimiter, handleCreateJob);
 router.get('/', verifyAccessToken, handleGetJob);
+router.get('/:id', verifyAccessToken, handleGetSingleJob);
 router.patch('/:id/status', verifyAccessToken, handleJobStatus);
 router.post('/:id/draft-email', verifyAccessToken, aiLimiter, handleEmail);
 router.get('/:id/email-stream', verifyAccessToken, handleEmailStream);

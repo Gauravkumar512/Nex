@@ -33,4 +33,4 @@ Thumbs.db
 .idea/
 *.swp
 
-/src/generated/prisma
+/backend/src/generated/prisma

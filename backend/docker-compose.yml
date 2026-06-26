@@ -1,20 +1,20 @@
 services:
   postgres:
     image: postgres:16
-    container_name: nexus_pg
+    container_name: nex_pg
     restart: always
     ports:
       - '5440:5432'
     environment:
-      POSTGRES_DB: nexus
-      POSTGRES_USER: nexus_admin
-      POSTGRES_PASSWORD: nexus_password
+      POSTGRES_DB: nex
+      POSTGRES_USER: nex_admin
+      POSTGRES_PASSWORD: nex_password
     volumes:
       - pg_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
-    container_name: nexus_redis
+    container_name: nex_redis
     restart: always
     ports:
       - '6381:6379'

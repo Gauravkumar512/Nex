@@ -19,7 +19,7 @@ router.get(
   authLimiter,
   passport.authenticate('google', {
     session: false,
-    scope: ['profile', 'email', 'https://www.googleapis.com/auth/gmail.readonly'],
+    scope: ['profile', 'email'],
     accessType: 'offline',
     prompt: 'consent',
   })
@@ -63,6 +63,12 @@ router.get(
 
 router.get('/failure', (req, res) => {
   res.status(401).json({ message: 'Google authentication failed' });
+});
+
+router.get('/logout', (_req, res) => {
+  res.clearCookie('accessToken', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+  res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+  res.redirect(process.env.FRONTEND_URL ?? 'http://localhost:5173');
 });
 
 router.post('/refresh', authLimiter, (req, res) => {

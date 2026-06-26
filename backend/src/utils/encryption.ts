@@ -1,7 +1,4 @@
 import crypto from 'crypto';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const ALGORITHM = 'aes-256-cbc';
 const KEY = Buffer.from(process.env.ENCRYPTION_KEY!, 'utf-8');

@@ -37,6 +37,28 @@ export async function handleGetJob(req: AuthenticatedRequest, res: Response, nex
   }
 }
 
+export async function handleGetSingleJob(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  const id = req.params.id as string;
+  try {
+    const job = await client.job.findUnique({
+      where: { id },
+      include: {
+        company: true,
+        statusHistory: { orderBy: { changedAt: 'asc' } },
+      },
+    });
+
+    if (!job || job.userId !== req.userId) {
+      res.status(404).json({ message: 'Job not found' });
+      return;
+    }
+
+    res.status(200).json(job);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function handleJobStatus(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const { id } = req.params;
 
