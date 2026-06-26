@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-background: #F5EFE6;
+  --color-surface: #FFFFFF;
+  --color-surface-warm: #EDE5D8;
+  --color-surface-deep: #E2D5C3;
+  --color-text-primary: #1C1009;
+  --color-text-secondary: #6B5744;
+  --color-text-faint: #A08C7A;
+  --color-accent: #C44B27;
+  --color-accent-hover: #A33B1F;
+  --color-accent-light: #F3E0D8;
+  --color-border: #DDD4C7;
+  --color-border-strong: #C8BAA8;
+  --color-success: #4A7C59;
+  --color-success-light: #DFF0E5;
+  --color-warning: #B07D2A;
+  --color-warning-light: #FFF3D6;
+  --color-danger: #B94040;
+  --color-danger-light: #FDEAEA;
+  --color-info: #3A6EA8;
+  --color-info-light: #E0ECFB;
+
+  /* Typography — driven by CSS vars so they can be swapped at the root */
+  --font-family-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-family-display: var(--font-display), Georgia, serif;
+  --font-family-heading: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+  --font-family-logo: var(--font-logo), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --font-sans: "Inter";
+  --font-display: "Playfair Display";
+  --font-heading: "Inter";
+  --font-logo: "Playfair Display";
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: #F5EFE6;
+  font-family: Inter, sans-serif;
+  color: #1C1009;
+}
