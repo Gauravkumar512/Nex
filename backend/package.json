@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon",
-    "worker": "nodemon --exec ts-node src/workers/index.ts",
+    "worker": "nodemon --legacy-watch --watch src --ext ts,json --exec ts-node src/workers/index.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/src/server.js",
+    "start:worker": "node dist/src/workers/index.js"
   },
   "keywords": [],
   "author": "",

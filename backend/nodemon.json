@@ -1,5 +1,6 @@
 {
     "watch": ["src", ".env"],
     "ext": "ts,json,env",
-    "exec": "ts-node src/server.ts"
+    "exec": "ts-node src/server.ts",
+    "legacyWatch": true
 }

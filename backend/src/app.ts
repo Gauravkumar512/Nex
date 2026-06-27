@@ -8,7 +8,6 @@ import { generalLimiter } from './middleware/rateLimiter';
 import authRouter from './routes/auth.routes';
 import jobRouter from './routes/job.routes';
 import profileRouter from './routes/profile.routes';
-import './workers/email.worker';
 
 const app = express();
 

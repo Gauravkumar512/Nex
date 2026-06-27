@@ -1,7 +1,7 @@
 import { Job, Worker } from 'bullmq';
 import anthropic from '../config/anthropic';
 import client from '../config/db';
-import { EmailDraft } from '../config/emailQueue';
+import type { EmailDraft } from '../config/emailQueue';
 import { closeSSEClient, sendSSEEvent } from '../utils/sseManager';
 
 const connection = {
