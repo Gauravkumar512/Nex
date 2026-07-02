@@ -88,10 +88,11 @@ export async function handleEmail(req: AuthenticatedRequest, res: Response, next
       return;
     }
 
-    await emailQueue.add('draft', {
-      jobId: id,
-      userId: req.userId!,
-    });
+    await emailQueue.add(
+      'draft',
+      { jobId: id, userId: req.userId! },
+      { jobId: id }
+    );
 
     res.status(202).json({ message: 'Email drafting started', streamUrl: `/jobs/${id}/email-stream` });
   } catch (error) {

@@ -188,7 +188,7 @@ function EmailSection({ jobId }: { jobId: string }) {
           variant="secondary"
           onClick={() => copy(`Subject: ${draft.subject}\n\n${draft.body}`, 'Email copied')}
         >
-          <Copy size={14} className="mr-2" />
+          <Copy size={14} />
           Copy Full Email
         </Button>
 

@@ -2,7 +2,6 @@ import { Job, Worker } from 'bullmq';
 import anthropic from '../config/anthropic';
 import client from '../config/db';
 import type { EmailDraft } from '../config/emailQueue';
-import { closeSSEClient, sendSSEEvent } from '../utils/sseManager';
 
 const connection = {
   host: process.env.REDIS_HOST!,
@@ -90,20 +89,13 @@ Role: ${jobRecord.role}`,
 
     const { subject, body } = JSON.parse(cleaned);
 
-    sendSSEEvent(jobId, 'done', { draft: { subject, body } });
-
-    closeSSEClient(jobId);
+    return { subject, body };
   },
   { connection }
 );
 
 worker.on('failed', (job, err) => {
   console.error(`Email draft job failed for ${job?.data.jobId}:`, err.message);
-
-  if (job?.data.jobId) {
-    sendSSEEvent(job.data.jobId, 'error', { message: 'Failed to draft email. Please try again.' });
-    closeSSEClient(job.data.jobId);
-  }
 });
 
 console.log('Email draft worker started');

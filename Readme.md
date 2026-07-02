@@ -1,4 +1,4 @@
-![alt text](image.png)# Nex — AI-Powered Job Application Tracker
+# Nex — AI-Powered Job Application Tracker
 
 A full-stack job application tracker with AI match scoring and cold email drafting. Built to learn OAuth2, JWT auth, PDF parsing, LLM integration, BullMQ async queues, SSE streaming, and PostgreSQL at depth.
 
