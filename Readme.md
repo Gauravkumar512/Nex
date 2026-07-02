@@ -1,17 +1,17 @@
-# Nex — AI-Powered Job Application Tracker
+# Nex - AI-Powered Job Application Tracker
 
-A full-stack job application tracker with AI match scoring and cold email drafting. Built to learn OAuth2, JWT auth, PDF parsing, LLM integration, BullMQ async queues, SSE streaming, and PostgreSQL at depth.
+A full stack job application tracker with AI match scoring and cold email drafting. Built to learn OAuth2, JWT auth, PDF parsing, LLM integration, BullMQ async queues, SSE streaming, and PostgreSQL at depth.
 
 ---
 
 ## What This Does
 
-- **Login with Google** — no passwords, refresh token encrypted at rest
-- **Upload your resume PDF** — AI extracts skills, projects, and a candidate summary automatically
-- **Add jobs manually** — AI scores each one against your profile (0–100 match) with a skill breakdown
-- **Track application status** — full audit trail of every status change with timestamps
-- **Draft cold emails** — BullMQ queues the LLM request, SSE streams the result back in real time; drafts persist in localStorage so they survive navigation and refresh
-- **Auth-aware landing page** — logged-in users see "Go to Dashboard" without being force-redirected; new visitors see the Google sign-in CTA
+- **Login with Google** - no passwords, refresh token encrypted at rest
+- **Upload your resume PDF** - AI extracts skills, projects, and a candidate summary automatically
+- **Add jobs manually** - AI scores each one against your profile (0–100 match) with a skill breakdown
+- **Track application status** - full audit trail of every status change with timestamps
+- **Draft cold emails** - BullMQ queues the LLM request, SSE streams the result back in real time; drafts persist in localStorage so they survive navigation and refresh
+- **Auth-aware landing page** - logged-in users see "Go to Dashboard" without being force-redirected; new visitors see the Google sign-in CTA
 
 ---
 
@@ -75,9 +75,11 @@ POST /jobs/:id/draft-email
 GET /jobs/:id/email-stream
   → SSE headers set → connection registered in memory map by jobId
        ↓
-  Worker picks up BullMQ job
+  Worker (separate process) picks up BullMQ job
   → fetch Job + Profile in parallel (Promise.all)
   → Claude Sonnet drafts structured cold email (5-10s)
+       ↓
+  QueueEvents (API process) hears 'completed' over Redis
   → sendSSEEvent(jobId, 'done', { draft: { subject, body } }) → push to waiting connection
   → closeSSEClient(jobId)
 ```
@@ -92,18 +94,18 @@ GET /jobs/:id/email-stream
 | Google OAuth2 + Passport     | Authentication                      | No password storage. Gives Gmail refresh token for future inbox watching    |
 | Node.js crypto (AES-256-CBC) | Encrypt refresh token at rest       | DB breach won't expose Gmail access. Defense in depth.                      |
 | JWT (httpOnly cookies)       | Session management                  | Stateless. HttpOnly prevents XSS. SameSite:lax prevents CSRF.               |
-| Redis + BullMQ               | Async email drafting                | LLM takes 5-10s — don't block the HTTP response. Retries on failure.        |
+| Redis + BullMQ               | Async email drafting                | LLM takes 5-10s - don't block the HTTP response. Retries on failure.        |
 | Redis + ioredis (Lua)        | Sliding-window rate limiting        | Atomic count-and-add in one script. Caps AI-endpoint credit burn per user.  |
 | SSE                          | Push LLM result to client           | Simpler than WebSockets for one-way server→client push. No extra library.   |
-| Claude Sonnet 4.6            | Resume extraction + email drafting  | Best quality for user-visible output and structured extraction               |
-| Claude Haiku 4.5             | Match scoring                       | Runs on every job add — cost matters. Fast and cheap for comparison tasks.  |
+| Claude Sonnet 4.6            | Resume extraction + email drafting  | Best quality for user-visible output and structured extraction              |
+| Claude Haiku 4.5             | Match scoring                       | Runs on every job add - cost matters. Fast and cheap for comparison tasks.  |
 | pdf-parse                    | PDF text extraction                 | Buffer-based, no filesystem needed                                          |
 | pdf-lib                      | PDF hyperlink annotation extraction | pdf-parse only gets visible text. Project GitHub links live in annotations. |
-| Multer (memoryStorage)       | File upload                         | Resume processed once and discarded — no filesystem cleanup                 |
+| Multer (memoryStorage)       | File upload                         | Resume processed once and discarded - no filesystem cleanup                 |
 | Zod                          | Input validation + TypeScript types | Runtime validation + inferred types from one schema                         |
-| Tailwind CSS v4              | Frontend styling                    | CSS-first config via `@theme {}` — no JS config file needed                 |
+| Tailwind CSS v4              | Frontend styling                    | CSS-first config via `@theme {}` - no JS config file needed                 |
 | TanStack React Query v5      | Frontend data fetching              | Automatic caching, optimistic updates, background refetch                   |
-| dotenvx                      | Env loading                         | Single entry point (`config/env.ts`) — no redundant dotenv calls            |
+| dotenvx                      | Env loading                         | Single entry point (`config/env.ts`) - no redundant dotenv calls            |
 
 ---
 
@@ -116,7 +118,7 @@ GET /jobs/:id/email-stream
 | id                    | UUID        | Primary key                       |
 | email                 | VARCHAR     | UNIQUE                            |
 | name                  | VARCHAR     | From Google profile               |
-| googleId              | VARCHAR     | UNIQUE — OAuth identifier         |
+| googleId              | VARCHAR     | UNIQUE - OAuth identifier         |
 | avatarUrl             | TEXT        | Google profile picture (nullable) |
 | encryptedRefreshToken | TEXT        | AES-256-CBC encrypted             |
 | accessToken           | TEXT        | Google short-lived token          |
@@ -128,8 +130,8 @@ GET /jobs/:id/email-stream
 | Column    | Type  | Note                                                           |
 | --------- | ----- | -------------------------------------------------------------- |
 | resume    | TEXT  | Raw extracted PDF text                                         |
-| skills    | JSONB | `{ languages, frameworks, tools }` — AI extracted              |
-| projects  | JSONB | `[{ name, description, techStack, githubUrl }]` — AI extracted |
+| skills    | JSONB | `{ languages, frameworks, tools }` - AI extracted              |
+| projects  | JSONB | `[{ name, description, techStack, githubUrl }]` - AI extracted |
 | summary   | TEXT  | AI-generated 2-3 sentence candidate summary                    |
 | githubUrl | TEXT  | Candidate's GitHub profile URL                                 |
 
@@ -154,7 +156,7 @@ One company row is shared across many jobs. Adding two Backend Intern roles at t
 | matchScore                | INT              | 0-100, set by Claude Haiku                                  |
 | matchBreakdown            | JSONB            | `{ matched: [], missing: [], reasoning: "" }`               |
 | status                    | ENUM             | SAVED → APPLIED → REPLIED → INTERVIEWING → REJECTED → OFFER |
-| appliedAt                 | TIMESTAMPTZ      | Nullable — set when status moves to APPLIED                 |
+| appliedAt                 | TIMESTAMPTZ      | Nullable - set when status moves to APPLIED                 |
 | userId + companyId + role | COMPOSITE UNIQUE | Can't add same job twice                                    |
 
 ### JobStatusHistory
@@ -178,8 +180,8 @@ Append-only audit trail. Every status change inserts a new row. Never updates. L
 
 Two separate token systems:
 
-- **Google tokens** — let our backend call Gmail API on user's behalf (future)
-- **Our JWTs** — let the user's browser authenticate to our API
+- **Google tokens** - let our backend call Gmail API on user's behalf (future)
+- **Our JWTs** - let the user's browser authenticate to our API
 
 ### 2. AES-256-CBC Encryption
 
@@ -189,24 +191,24 @@ decrypt("hexIV:hexCiphertext", KEY) → original refreshToken
 ```
 
 - KEY: 32-byte secret in `.env`, never in the database
-- IV: random 16 bytes generated fresh per encryption — same plaintext produces different ciphertext every time
+- IV: random 16 bytes generated fresh per encryption - same plaintext produces different ciphertext every time
 - If DB is leaked: ciphertext is useless without KEY
 
 ### 3. JWT Access + Refresh Token Pattern
 
 - **Access token**: 15 minutes, verified on every protected request
 - **Refresh token**: 7 days, used only to issue new access tokens
-- Both set as `httpOnly` cookies — JS can't read them (XSS protection)
-- `SameSite: lax` — cross-site requests don't include cookies (CSRF protection)
-- **Refresh token rotation** — new refresh token issued on every refresh call
+- Both set as `httpOnly` cookies - JS can't read them (XSS protection)
+- `SameSite: lax` - cross-site requests don't include cookies (CSRF protection)
+- **Refresh token rotation** - new refresh token issued on every refresh call
 
 The frontend Axios instance intercepts 401 responses, calls `/auth/refresh` once, then retries the original request automatically. If the refresh fails, the user is redirected to the landing page.
 
-### 4. PDF Parsing — Two-Pass Approach
+### 4. PDF Parsing - Two-Pass Approach
 
 ```
-Pass 1 — pdf-parse  → extracts visible text (names, descriptions, education)
-Pass 2 — pdf-lib    → walks PDF annotation tree → extracts all hyperlink URIs
+Pass 1 - pdf-parse  → extracts visible text (names, descriptions, education)
+Pass 2 - pdf-lib    → walks PDF annotation tree → extracts all hyperlink URIs
 
 Both passed to Claude Sonnet → structured JSON profile
 ```
@@ -221,7 +223,7 @@ Job match scoring  → Claude Haiku   (runs on every job add, cost matters)
 Cold email draft   → Claude Sonnet  (user-visible output, quality matters)
 ```
 
-Haiku is ~5x cheaper than Sonnet. Match scoring is a structured comparison task — no deep reasoning needed.
+Haiku is ~5x cheaper than Sonnet. Match scoring is a structured comparison task - no deep reasoning needed.
 
 ### 6. BullMQ + SSE Pipeline
 
@@ -229,17 +231,20 @@ Haiku is ~5x cheaper than Sonnet. Match scoring is a structured comparison task 
 POST /draft-email   → push job to BullMQ → 202 Accepted immediately (client doesn't wait)
 GET  /email-stream  → SSE connection opened → registered in sseManager by jobId
 
-Worker (inside API process):
+Worker (standalone process, started via `npm run worker`):
   → dequeue job
   → Promise.all([fetch job, fetch profile])
   → Claude Sonnet drafts structured cold email (~5-10s)
-  → sendSSEEvent(jobId, 'done', { draft: { subject, body } })  ← finds waiting connection, writes to it
+  → returns { subject, body } - job marked completed in Redis
+
+API process (QueueEvents listening on the same queue):
+  → hears 'completed' over Redis → sendSSEEvent(jobId, 'done', { draft })  ← finds waiting connection, writes to it
   → closeSSEClient(jobId)
 ```
 
-The worker is started in-process by `app.ts` (`import './workers/email.worker'`). BullMQ retries failed jobs twice with exponential backoff; on final failure the worker pushes an `error` SSE event so the client isn't left hanging.
+The worker runs as its own process (`src/workers/index.ts`), separate from the API (`app.ts`) - it has no access to the API process's in-memory SSE client map. `QueueEvents` in `config/emailQueue.ts` bridges the gap by listening for `completed`/`failed` events over Redis and forwarding them to whichever process holds the open SSE connection. BullMQ retries failed jobs twice with exponential backoff; on final failure an `error` SSE event is pushed so the client isn't left hanging.
 
-The SSE manager is an in-memory `Map<jobId, Response>`. This works for a single server. For horizontal scaling, replace with Redis Pub/Sub.
+The SSE manager is an in-memory `Map<jobId, Response>`. This works for a single API instance. For horizontal scaling of the API itself, replace with Redis Pub/Sub.
 
 The frontend persists the last draft in localStorage (`nex_draft_{jobId}`) so it survives page refreshes and navigation. Re-drafting is opt-in via a "Re-draft" button.
 
@@ -264,7 +269,7 @@ prisma.company.upsert({
 });
 ```
 
-`name_website` is Prisma's auto-generated name for `@@unique([name, website])`. Find or create in one atomic operation — no race condition between a separate findUnique and create.
+`name_website` is Prisma's auto-generated name for `@@unique([name, website])`. Find or create in one atomic operation - no race condition between a separate findUnique and create.
 
 ### 9. Redis Sliding-Window Rate Limiting
 
@@ -298,13 +303,13 @@ A terminal Express error middleware (`errorHandler`) is mounted after all routes
 
 ### Auth
 
-| Method | Endpoint              | Description                                                            |
-| ------ | --------------------- | ---------------------------------------------------------------------- |
-| GET    | /auth/google          | Redirect to Google OAuth consent                                       |
-| GET    | /auth/google/callback | OAuth callback — sets JWT cookies, redirects to `FRONTEND_URL/dashboard` |
-| GET    | /auth/failure         | OAuth failure landing — returns 401                                    |
-| POST   | /auth/refresh         | Get new access token using refresh cookie                              |
-| GET    | /auth/me              | Current user info (id, email, name, avatarUrl, createdAt)              |
+| Method | Endpoint              | Description                                                              |
+| ------ | --------------------- | ------------------------------------------------------------------------ |
+| GET    | /auth/google          | Redirect to Google OAuth consent                                         |
+| GET    | /auth/google/callback | OAuth callback - sets JWT cookies, redirects to `FRONTEND_URL/dashboard` |
+| GET    | /auth/failure         | OAuth failure landing - returns 401                                      |
+| POST   | /auth/refresh         | Get new access token using refresh cookie                                |
+| GET    | /auth/me              | Current user info (id, email, name, avatarUrl, createdAt)                |
 
 ### Profile
 
@@ -322,7 +327,7 @@ A terminal Express error middleware (`errorHandler`) is mounted after all routes
 | GET    | /jobs/:id              | Get single job with status history        |
 | PATCH  | /jobs/:id/status       | Update job status                         |
 | POST   | /jobs/:id/draft-email  | Queue cold email drafting (returns 202)   |
-| GET    | /jobs/:id/email-stream | SSE stream — open before triggering draft |
+| GET    | /jobs/:id/email-stream | SSE stream - open before triggering draft |
 
 ### Health
 
@@ -343,7 +348,7 @@ Nex/
         redis.ts             ← ioredis client (rate limiter)
         passport.ts          ← Google OAuth2 strategy
         anthropic.ts         ← Anthropic client singleton
-        emailQueue.ts        ← BullMQ email-draft queue (2 retries, exp backoff)
+        emailQueue.ts        ← BullMQ email-draft queue (2 retries, exp backoff) + QueueEvents → SSE bridge
         env.ts               ← single dotenvx entry point
       controller/
         job.controller.ts    ← create, list, get single, status update, draft email, SSE stream
@@ -354,7 +359,8 @@ Nex/
         job.service.ts       ← createJob, getJobs, updateJobStatus
         match.service.ts     ← scoreJobMatch via Claude Haiku
       workers/
-        email.worker.ts      ← BullMQ worker: fetch data → Claude Sonnet → SSE push
+        email.worker.ts      ← BullMQ worker: fetch data → Claude Sonnet → return draft
+        index.ts             ← standalone worker process entry point (`npm run worker`)
       routes/
         auth.routes.ts
         profile.routes.ts
@@ -369,7 +375,8 @@ Nex/
       utils/
         encryption.ts        ← AES-256-CBC encrypt / decrypt
         sseManager.ts        ← in-memory Map<jobId, Response> with 30s pending-result buffer
-      app.ts                 ← Express setup, middleware, route mounting, worker import
+        AppError.ts          ← typed error with statusCode, thrown from services/controllers
+      app.ts                 ← Express setup, middleware, route mounting (no worker import)
       server.ts              ← entry point
     prisma/
       schema.prisma          ← single source of truth for DB structure
@@ -383,20 +390,28 @@ Nex/
         jobs.ts              ← Job types, createJob, getJobs, getJob, updateStatus, draft/stream
         profile.ts           ← uploadResume, getProfile
       components/
+        layout/
+          AppLayout.tsx      ← shared shell (sidebar + content area) for authenticated pages
+          Sidebar.tsx        ← nav links, active-route highlighting, user info
         ui/
+          Badge.tsx          ← status/source pill
+          Button.tsx         ← variant-based button (primary/secondary/ghost/danger)
+          MatchScoreRing.tsx ← SVG ring showing 0-100 AI match score
+          SkeletonCard.tsx   ← loading placeholder for job cards
+          StatusDropdown.tsx ← job status select with optimistic update
           Toast.tsx          ← ToastProvider + useToast hook (auto-dismiss, enter/exit animation)
       hooks/
         useAuth.ts           ← useQuery wrapper for /auth/me
         useJobs.ts           ← useJobs, useJob, useCreateJob, useUpdateStatus mutations
-        useProfile.ts        ← useProfile, useUploadResume
       pages/
         Landing.tsx          ← landing page with rotating mock job cards, auth-aware CTA
         Dashboard.tsx        ← job board with status columns and add-job modal
+        AddJob.tsx           ← manual job-add form with source/role/JD fields
         JobDetail.tsx        ← single job view: match breakdown, status timeline, email draft
-        Profile.tsx          ← resume upload + extracted profile display
+        Profile.tsx          ← resume upload + extracted profile display (useQuery + getProfile directly)
       router/
         index.tsx            ← React Router v6 with ProtectedRoute
-      index.css              ← Tailwind v4 @theme{} config — all color tokens + font CSS vars
+      index.css              ← Tailwind v4 @theme{} config - all color tokens + font CSS vars
       App.tsx                ← QueryClientProvider + ToastProvider root
       main.tsx               ← React DOM entry
     public/
@@ -428,7 +443,12 @@ npx prisma generate
 
 # 5. Start dev server
 npm run dev
+
+# 6. In a separate terminal, start the email-draft worker
+npm run worker
 ```
+
+Cold email drafting won't complete without the worker running - the API only enqueues the BullMQ job and waits for `QueueEvents` to report it done.
 
 ### Frontend
 
@@ -481,8 +501,7 @@ Run that separately for `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `SESSION_SECRET`
 
 ## What's Not Built Yet
 
-- **Gmail watching** — poll inbox for recruiter replies, auto-update job status to REPLIED
-- **Notifications** — in-app alerts for replies and follow-up reminders
-- **Email send** — draft is generated and persisted locally; no send/edit history on the server
-- **Standalone worker process** — the worker currently runs in-process via `app.ts`; a separate process would need a `workers/index.ts` entry point
-- **Deployment** — containerize frontend + API, deploy behind Nginx reverse proxy
+- **Gmail watching** - poll inbox for recruiter replies, auto-update job status to REPLIED
+- **Notifications** - in-app alerts for replies and follow-up reminders
+- **Email send** - draft is generated and persisted locally; no send/edit history on the server
+- **Deployment** - containerize frontend + API, deploy behind Nginx reverse proxy
