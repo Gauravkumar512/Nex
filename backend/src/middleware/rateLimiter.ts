@@ -7,6 +7,7 @@ export interface RateLimiterOptions {
   max: number;
   keyPrefix: string;
   message: string;
+  failClosed?: boolean;
 }
 
 const SLIDING_WINDOW_SCRIPT = `
@@ -70,7 +71,15 @@ export function createRateLimiter(options: RateLimiterOptions) {
       });
       return;
     } catch (error) {
+
       console.error(`[rateLimiter] Redis error for key "${key}":`, error);
+      if(options.failClosed){
+        res.status(503).json({
+          error: "Service temporarily unavailable",
+          message: 'Login is temporarily unavailable. Please try again shortly.',
+        });
+        return;
+      }
       return next();
     }
   };
@@ -81,6 +90,7 @@ export const generalLimiter = createRateLimiter({
   max: 100,
   keyPrefix: 'general',
   message: 'Too many requests. Please slow down.',
+  failClosed: false,
 });
 
 export const aiLimiter = createRateLimiter({
@@ -88,6 +98,7 @@ export const aiLimiter = createRateLimiter({
   max: 10,
   keyPrefix: 'ai',
   message: 'Too many AI requests. Wait a minute before trying again.',
+  failClosed: true,
 });
 
 export const authLimiter = createRateLimiter({
@@ -95,4 +106,5 @@ export const authLimiter = createRateLimiter({
   max: 5,
   keyPrefix: 'auth',
   message: 'Too many login attempts. Try again in 15 minutes.',
+  failClosed: true,
 });
