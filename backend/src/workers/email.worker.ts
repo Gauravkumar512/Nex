@@ -2,11 +2,7 @@ import { Job, Worker } from 'bullmq';
 import anthropic from '../config/anthropic';
 import client from '../config/db';
 import type { EmailDraft } from '../config/emailQueue';
-
-const connection = {
-  host: process.env.REDIS_HOST!,
-  port: parseInt(process.env.REDIS_PORT!),
-};
+import { redisConnection } from '../config/redis';
 
 export const worker = new Worker<EmailDraft>(
   'email-draft',
@@ -91,7 +87,7 @@ Role: ${jobRecord.role}`,
 
     return { subject, body };
   },
-  { connection }
+  { connection: redisConnection }
 );
 
 worker.on('failed', (job, err) => {

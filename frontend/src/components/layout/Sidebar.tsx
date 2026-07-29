@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, PlusCircle, User, LogOut } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { API_URL } from '../../api/axios'
 
 const NAV = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -13,7 +14,7 @@ export default function Sidebar() {
   const navigate = useNavigate()
 
   function handleSignOut() {
-    window.location.href = 'http://localhost:3000/auth/logout'
+    window.location.href = `${API_URL}/auth/logout`
   }
 
   return (

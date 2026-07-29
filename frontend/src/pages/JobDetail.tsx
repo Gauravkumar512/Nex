@@ -10,6 +10,7 @@ import { useToast } from '../components/ui/Toast'
 import { useJob } from '../hooks/useJobs'
 import { draftEmail } from '../api/jobs'
 import type { JobStatus } from '../api/jobs'
+import { API_URL } from '../api/axios'
 
 function formatDate(iso: string) {
   const d = new Date(iso)
@@ -97,7 +98,7 @@ function EmailSection({ jobId }: { jobId: string }) {
     setDraft(null)
 
     const source = new EventSource(
-      `http://localhost:3000/jobs/${jobId}/email-stream`,
+      `${API_URL}/jobs/${jobId}/email-stream`,
       { withCredentials: true }
     )
     sourceRef.current = source

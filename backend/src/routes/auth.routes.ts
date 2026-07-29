@@ -14,6 +14,14 @@ interface GoogleAuthPayload {
   refreshToken: string;
 }
 
+const isProd = process.env.NODE_ENV === 'production';
+const authCookieOptions = (maxAge: number) => ({
+  httpOnly: true,
+  secure: isProd,
+  sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
+  maxAge,
+});
+
 router.get(
   '/google',
   authLimiter,
@@ -38,19 +46,8 @@ router.get(
       const user = await googleAuth(data);
       const { accessToken, refreshToken } = generateTokens(user.id);
 
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 15 * 60 * 1000,
-      });
-
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+      res.cookie('accessToken', accessToken, authCookieOptions(15 * 60 * 1000));
+      res.cookie('refreshToken', refreshToken, authCookieOptions(7 * 24 * 60 * 60 * 1000));
 
       const frontendUrl = process.env.FRONTEND_URL;
       if (!frontendUrl) throw new Error('FRONTEND_URL is not set');
@@ -66,8 +63,8 @@ router.get('/failure', (req, res) => {
 });
 
 router.get('/logout', (_req, res) => {
-  res.clearCookie('accessToken', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
-  res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+  res.clearCookie('accessToken', authCookieOptions(0));
+  res.clearCookie('refreshToken', authCookieOptions(0));
   res.redirect(process.env.FRONTEND_URL ?? 'http://localhost:5173');
 });
 
@@ -83,19 +80,8 @@ router.post('/refresh', authLimiter, (req, res) => {
     const decoded = verifyRefreshToken(refreshToken);
     const tokens = generateTokens(decoded.userId);
 
-    res.cookie('accessToken', tokens.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 15 * 60 * 1000,
-    });
-
-    res.cookie('refreshToken', tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie('accessToken', tokens.accessToken, authCookieOptions(15 * 60 * 1000));
+    res.cookie('refreshToken', tokens.refreshToken, authCookieOptions(7 * 24 * 60 * 60 * 1000));
 
     res.status(200).json({ message: 'Tokens refreshed' });
   } catch (error) {

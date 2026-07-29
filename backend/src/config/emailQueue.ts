@@ -1,4 +1,5 @@
 import { Queue, QueueEvents } from 'bullmq';
+import { redisConnection } from './redis';
 import { closeSSEClient, sendSSEEvent } from '../utils/sseManager';
 
 export interface EmailDraft {
@@ -6,13 +7,8 @@ export interface EmailDraft {
   userId: string;
 }
 
-const connection = {
-  host: process.env.REDIS_HOST!,
-  port: parseInt(process.env.REDIS_PORT!),
-};
-
 export const emailQueue = new Queue<EmailDraft>('email-draft', {
-  connection,
+  connection: redisConnection,
   defaultJobOptions: {
     attempts: 2,
     backoff: {
@@ -24,11 +20,7 @@ export const emailQueue = new Queue<EmailDraft>('email-draft', {
   },
 });
 
-// The worker that processes these jobs runs in a separate process, so it can't
-// write directly into this process's in-memory SSE client map. QueueEvents
-// listens over Redis and bridges completion back to whichever process holds
-// the open SSE connection for this job id.
-const emailQueueEvents = new QueueEvents('email-draft', { connection });
+export const emailQueueEvents = new QueueEvents('email-draft', { connection: redisConnection });
 
 emailQueueEvents.on('completed', ({ jobId, returnvalue }) => {
   sendSSEEvent(jobId, 'done', { draft: returnvalue as unknown as { subject: string; body: string } });

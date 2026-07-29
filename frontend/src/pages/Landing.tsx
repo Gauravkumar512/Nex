@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Target, Mail, Clock, Upload, FileSearch, Send } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { API_URL } from '../api/axios'
 
 /* ── mock job pool — 3 picked randomly on mount ─────────────── */
 
@@ -176,7 +177,7 @@ export default function Landing() {
             ) : (
               <>
                 <button
-                  onClick={() => { window.location.href = 'http://localhost:3000/auth/google' }}
+                  onClick={() => { window.location.href = `${API_URL}/auth/google` }}
                   disabled={isLoading}
                   className="bg-accent hover:bg-accent-hover text-white font-sans font-medium rounded-full px-6 py-2.5 text-sm transition-all duration-150 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
@@ -269,7 +270,7 @@ export default function Landing() {
             </button>
           ) : (
             <button
-              onClick={() => { window.location.href = 'http://localhost:3000/auth/google' }}
+              onClick={() => { window.location.href = `${API_URL}/auth/google` }}
               disabled={isLoading}
               className="bg-accent hover:bg-accent-hover text-white font-sans font-medium rounded-full px-8 py-3 text-sm transition-all duration-150 disabled:opacity-60"
             >
